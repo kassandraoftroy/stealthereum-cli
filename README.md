@@ -22,28 +22,56 @@ generate a stealth meta address and store the keys
 stealthereum keygen -o path/to/keyfile.json
 ```
 
+-----------------------
+
 recompute your stealth meta address from keyfile
 
 ```bash
 stealthereum show-meta-addr -k path/to/keyfile.json
 ```
 
-with the stealth meta address of a receiver generate all the components of a stealth transaction as defined in ERC-5564
+-----------------------
+
+generate all the components of a stealth transaction as defined in ERC-5564 given a target receiver and the desired asset(s) to sealthily transfer
 
 ```bash
 stealthereum stealth-tx -r 0xReceiverStealthMetaAddres --msgvalue 1000000000000000000 --tokens 0x12970E6868f88f6557B76120662c1B3E50A646bf 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 --amounts 1 100000000
 ```
 
-the above will output:
+the above example would output:
 1. a stealth address
 2. an ephemeral public key and 
-3. metadata for stealthily transferring 1 ETH, a Milady (tokenId=1), and 100 USDC to the owner of the stealth meta address.
+3. metadata for stealthily transferring (on mainnet) 1 ETH, a Milady (tokenId=1), and 100 USDC to the owner of the stealth meta address.
 
-compute private key for a stealth address you control
+-----------------------
+
+scan announced stealth transfers for payments to your stealth meta address
 
 ```bash
-stealthereum reveal-stealth-key -k path/to/keyfile.json -s 0xSomeStealthAddress -e 0xSomeEpmheralPubkey
+stealthereum scan -k path/to/keyfile.json -s path/to/scanfile.json
 ```
 
-note that no scanning functionality yet in place, so you'd have to manually scan by passing all announced `[stealth address, ephemeral pubkey]` pairs into this command and waiting until one outputs a private key isntead of panicking, which it does when you are not the intended recipient)
+this will log the `[stealth_address, ephemeral_pubkey]` pairs of all stealth transfers that are claimable by you in the scanfile.
 
+For now a scanfile has to be precomputed into a JSON format like so
+
+```json
+{
+    "announcements": [
+        {
+            "stealth_address": "0xSomeStealthAddress",
+            "ephemeral_pubkey": "0xSomeEphemeralPubkey",
+            "view_tag": 116
+        },
+        ...
+    ]
+}
+```
+
+-----------------------
+
+compute the private key for a stealth address you control
+
+```bash
+stealthereum reveal-stealth-key -k path/to/keyfile.json -s 0xSomeStealthAddress -e 0xSomeEphemeralPubkey
+```

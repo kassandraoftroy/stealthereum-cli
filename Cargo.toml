@@ -1,6 +1,6 @@
 [package]
 name = "stealthereum-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["kassandra.eth 0xDADA@protonmail.com"]
 license = "MIT"
