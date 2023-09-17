@@ -45,6 +45,16 @@ the above example would output:
 
 -----------------------
 
+compute the private key for a stealth address you control
+
+```bash
+stealthereum reveal-stealth-key -k path/to/keyfile.json -s 0xSomeStealthAddress -e 0xSomeEphemeralPubkey
+```
+
+note that this requires you to know in advance what `[stealth_address, ephemeral_pubkey]` pairs are actually payments meant for your stealth meta address. To find this out see `scan` command below.
+
+-----------------------
+
 scan announced stealth transfers for payments to your stealth meta address
 
 ```bash
@@ -63,15 +73,11 @@ For now a scanfile has to be precomputed into a JSON format like so
             "ephemeral_pubkey": "0xSomeEphemeralPubkey",
             "view_tag": 116
         },
-        ...
+        {
+            "stealth_address": "0xSomeOtherAddress",
+            "ephemeral_pubkey": "0xSomeOtherPubkey",
+            "view_tag": 94
+        }
     ]
 }
-```
-
------------------------
-
-compute the private key for a stealth address you control
-
-```bash
-stealthereum reveal-stealth-key -k path/to/keyfile.json -s 0xSomeStealthAddress -e 0xSomeEphemeralPubkey
 ```

@@ -90,7 +90,7 @@ enum Commands {
         /// path to keyfile containing stealth meta address keys
         #[arg(short, long, required=true, value_name = "FILE")]
         keyfile: Option<PathBuf>,
-        /// path to scanfile containing a ScannableList JSON like {announcements: [{stealth_address:, ephemeral_pubkey:, view_tag:}...]}
+        /// path to scanfile containing a ScannableList JSON e.g. {announcements: [{stealth_address:, ephemeral_pubkey:, view_tag:}]} (see README for more info)
         #[arg(short, long, required=true, value_name = "FILE")]
         scanfile: Option<PathBuf>,
     },
@@ -259,14 +259,14 @@ fn scan_for_payments(keyfile: &PathBuf, scanfile: &PathBuf) {
     let file_result = read_file(scanfile);
     let string_file = match file_result {
         Ok(val) => val,
-        Err(error) => panic!("error reading keyfile: {:?}", error),
+        Err(error) => panic!("error reading scanfile: {:?}", error),
     };
     
     let sl_result = parse_scannable_list(&string_file);
 
     let sl = match sl_result {
         Ok(val) => val,
-        Err(error) => panic!("error parsing keyfile: {:?}", error),
+        Err(error) => panic!("error parsing scanfile: {:?}", error),
     };
 
     let (sk, vk) = extract_keys_from_keyfile(keyfile);
@@ -289,6 +289,7 @@ fn scan_for_payments(keyfile: &PathBuf, scanfile: &PathBuf) {
             );
         }
     }
+    println!("\nscan complete");
 }
 
 fn new_stealth_address(receiver: &String) {
