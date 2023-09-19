@@ -9,8 +9,6 @@ use eth_stealth_addresses::{
     check_stealth_address_fast,
 };
 
-use num_traits::Num;
-use num_bigint;
 use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use std::fs::File;
@@ -46,36 +44,21 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// generates a new stealth meta address and stores key material
+    /// generates a new stealth meta address and stores the private keys in a json
     Keygen {
         /// specify custom path to keyfile (defaults to ./keys.json)
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
     },
-    /// show stealth meta address corresponding to a keyfile
-    ShowMetaAddr {
-        /// path to keyfile containing stealth meta address keys
-        #[arg(short, long, required=true, value_name = "FILE")]
-        keyfile: Option<PathBuf>,
-    },
-    /// generates all required data for steath transfers to a target receiver
-    StealthTx {
+    /// generates a new stealth address for a target stealth meta address receiver
+    StealthAddress {
         /// 0x prefixed hex encoded 66 byte stealth meta address
         #[arg(short, long, required=true, value_name="HEX")]
         receiver: Option<String>,
-        /// amount of network token to forward (in wei, decimal)
-        #[arg(short, long, value_name="UINT")]
-        msgvalue: Option<String>,
-        /// ERC20/ERC721 0x prefixed hex encoded 20 byte token addresses
-        #[arg(short, long, num_args=0.., value_name="HEX")]
-        tokens: Vec<String>,
-        /// amounts of ERC20 tokens or Ids of ERC721 tokens to transfer (in wei, decimal)
-        #[arg(short, long, num_args=0.., value_name="UINT")]
-        amounts: Vec<String>,
     },
-    /// computes and reveals the private key of a stealth address
+    /// computes and reveals the private key of a stealth address (if keyfile unmasks it)
     RevealStealthKey {
-        /// path to keyfile containing stealth meta address keys
+        /// path to keyfile containing stealth meta address private keys
         #[arg(short, long, required=true, value_name = "FILE")]
         keyfile: Option<PathBuf>,
         /// 0x prefixed 20 byte hex encoded ethereum stealth address
@@ -87,33 +70,18 @@ enum Commands {
     },
     /// scan announced stealth addresses for payments to your stealth meta address
     Scan {
-        /// path to keyfile containing stealth meta address keys
+        /// path to keyfile containing stealth meta address private keys
         #[arg(short, long, required=true, value_name = "FILE")]
         keyfile: Option<PathBuf>,
-        /// path to scanfile containing a ScannableList JSON e.g. {announcements: [{stealth_address:, ephemeral_pubkey:, view_tag:}]} (see README for more info)
+        /// path to scanfile (see README here: https://github.com/kassandraoftroy/stealthereum-cli#scan)
         #[arg(short, long, required=true, value_name = "FILE")]
         scanfile: Option<PathBuf>,
     },
-    /// generates a new stealth address for a target receiver
-    StealthAddr {
-        /// 0x prefixed hex encoded 66 byte stealth meta address
-        #[arg(short, long, required=true, value_name="HEX")]
-        receiver: Option<String>,
-    },
-    /// encodes metadata from view tag and desired transfers
-    FmtMetadata {
-        /// receiver stealth address view tag, uint 0-255
-        #[arg(short, long, required=true, value_name="UINT")]
-        viewtag: Option<u8>,
-        /// amount of network token to forward (in wei, decimal)
-        #[arg(short, long, value_name="UINT")]
-        msgvalue: Option<String>,
-        /// ERC20/ERC721 0x prefixed hex encoded 20 byte token addresses
-        #[arg(short, long, num_args=0.., value_name="HEX")]
-        tokens: Vec<String>,
-        /// amounts of ERC20 tokens or Ids of ERC721 tokens to transfer (in wei, decimal)
-        #[arg(short, long, num_args=0.., value_name="UINT")]
-        amounts: Vec<String>,
+    /// show stealth meta address corresponding to a keyfile
+    ShowMetaAddress {
+        /// path to keyfile containing stealth meta address private keys
+        #[arg(short, long, required=true, value_name = "FILE")]
+        keyfile: Option<PathBuf>,
     },
 }
 
@@ -131,23 +99,11 @@ fn main() {
                 }
             }
         }
-        Some(Commands::ShowMetaAddr { keyfile }) => {
-            match keyfile {
-                Some(keyfile) => show_meta_address(keyfile),
-                None => panic!("missing required --keyfile argument (-k)"),
-            }
-        }
-        Some(Commands::StealthTx { receiver, msgvalue, tokens, amounts }) => {
-            let r = match receiver {
-                Some(receiver) => receiver,
+        Some(Commands::StealthAddress { receiver }) => {
+            match receiver {
+                Some(receiver) => new_stealth_address(receiver),
                 None => panic!("missing required --receiver argument (-r)"),
-            };
-            let zero = String::from("0");
-            let mv = match msgvalue {
-                Some(msgvalue) => msgvalue,
-                None => &zero,
-            };
-            new_stealth_tx(r, mv, tokens, amounts);
+            }
         }
         Some(Commands::RevealStealthKey { keyfile, stealthaddr, ephemeralpub }) => {
             let kf = match keyfile {
@@ -177,24 +133,11 @@ fn main() {
 
             scan_for_payments(kf, sf);
         }
-        Some(Commands::StealthAddr { receiver }) => {
-            match receiver {
-                Some(receiver) => new_stealth_address(receiver),
-                None => panic!("missing required --receiver argument (-r)"),
+        Some(Commands::ShowMetaAddress { keyfile }) => {
+            match keyfile {
+                Some(keyfile) => show_meta_address(keyfile),
+                None => panic!("missing required --keyfile argument (-k)"),
             }
-        }
-        Some(Commands::FmtMetadata {viewtag, msgvalue, tokens, amounts}) => {
-            let vt = match viewtag {
-                Some(viewtag) => *viewtag,
-                None => panic!("missing required --viewtag argument (-v)"),
-            };
-            let zero = String::from("0");
-            let mv = match msgvalue {
-                Some(msgvalue) => msgvalue,
-                None => &zero,
-            };
-
-            show_metadata(vt, mv, tokens, amounts);
         }
         None => {}
     }
@@ -227,21 +170,6 @@ fn show_meta_address(keyfile: &PathBuf) {
     );
 
     println!("------ STEALTH META ADDRESS ------\n{}", hexlify(&stealth_meta_address));
-}
-
-fn new_stealth_tx(receiver: &String,  msgvalue: &String, tokens: &Vec<String>, amounts: &Vec<String>) {
-    let (stealth_address, ephemeral_pubkey, view_tag) = generate_stealth_address(
-        unhexlify(&receiver).as_slice().try_into().unwrap()
-    );
-
-    let metadata = encode_metadata(view_tag, msgvalue, tokens, amounts);
-    println!(
-        "------ STEALTH TX ------\nschemeId: {}\nstealth address: {}\nephepmeral pubkey: {}\nmetadata: {}",
-        0,
-        hexlify(&stealth_address),
-        hexlify(&ephemeral_pubkey),
-        metadata
-    );
 }
 
 fn reveal_stealth_key(keyfile: &PathBuf, stealth_addr: &String, ephem_pub: &String) {
@@ -306,12 +234,6 @@ fn new_stealth_address(receiver: &String) {
     );
 }
 
-fn show_metadata(view_tag: u8, msgvalue: &String, tokens: &Vec<String>, amounts: &Vec<String>) {
-    let s = encode_metadata(view_tag, msgvalue, tokens, amounts);
-
-    println!("------ TX METADATA ------\n{}", s);
-}
-
 fn extract_keys_from_keyfile(keyfile: &PathBuf) -> ([u8; 32], [u8; 32]) {
     let file_result = read_file(keyfile);
     let string_file = match file_result {
@@ -332,30 +254,6 @@ fn extract_keys_from_keyfile(keyfile: &PathBuf) -> ([u8; 32], [u8; 32]) {
     (sk, vk)
 }
 
-fn encode_metadata(view_tag: u8, msgvalue: &String, tokens: &Vec<String>, amounts: &Vec<String>) -> String {
-    let len = tokens.len();
-    if len != amounts.len() {
-        panic!("length mismatch for --tokens and --amounts");
-    }
-    let mut v = vec![view_tag];
-    if msgvalue != &String::from("0") {
-        let mut mv = parse_uint256_from_string(msgvalue);
-        let mut es = vec![0xee; 24];
-        v.append(&mut es);
-        v.append(&mut mv);
-    }
-    for i in 0..len {
-        let mut prefix = vec![0x23, 0xb8, 0x72, 0xdd];
-        let mut token = unhexlify(&tokens[i]);
-        let mut value = parse_uint256_from_string(&amounts[i]);
-        v.append(&mut prefix);
-        v.append(&mut token);
-        v.append(&mut value);
-    }
-
-    return hexlify(v.as_slice());
-}
-
 fn read_file(path: &PathBuf) -> std::io::Result<String> {
     let mut file = File::open(path)?;
     let mut contents = String::new();
@@ -371,19 +269,6 @@ fn parse_keyfile(contents: &String) -> serde_json::Result<Keyfile> {
 fn parse_scannable_list(contents: &String) -> serde_json::Result<ScannableList> {
     let sl: ScannableList = serde_json::from_str(contents)?;
     Ok(sl)
-}
-
-fn parse_uint256_from_string(s: &String) -> Vec<u8> {
-    let result = num_bigint::BigUint::from_str_radix(s, 10);
-    let mut v = match result {
-        Ok(result) => result.to_bytes_be(),
-        Err(error) => panic!("error parsing msgvalue: {:?}", error),
-    };
-    while v.len() < 32 {
-        v.insert(0, 0x00);
-    }
-
-    v
 }
 
 fn hexlify(a: &[u8]) -> String {

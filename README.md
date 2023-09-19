@@ -16,34 +16,25 @@ Make sure you add `$HOME/.cargo/bin` to your PATH
 
 ## Usage
 
+Below is the list of basic commands
+
+### keygen
+
 generate a stealth meta address and store the keys
 
 ```bash
 stealthereum keygen -o path/to/keyfile.json
 ```
 
------------------------
+### stealth-address
 
-recompute your stealth meta address from keyfile
-
-```bash
-stealthereum show-meta-addr -k path/to/keyfile.json
-```
-
------------------------
-
-generate all the components of a stealth transaction as defined in ERC-5564 given a target receiver and the desired asset(s) to sealthily transfer
+generate all the components of a stealth address as defined in ERC-5564 given a target receiver's stealth meta address to privately send to
 
 ```bash
-stealthereum stealth-tx -r 0xReceiverStealthMetaAddres --msgvalue 1000000000000000000 --tokens 0x12970E6868f88f6557B76120662c1B3E50A646bf 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 --amounts 1 100000000
+stealthereum stealth-address -r 0xReceiverStealthMetaAddres
 ```
 
-the above example would output:
-1. a stealth address
-2. an ephemeral public key and 
-3. metadata for stealthily transferring (on mainnet) 1 ETH, a Milady (tokenId=1), and 100 USDC to the owner of the stealth meta address.
-
------------------------
+### reveal-stealth-key
 
 compute the private key for a stealth address you control
 
@@ -51,9 +42,9 @@ compute the private key for a stealth address you control
 stealthereum reveal-stealth-key -k path/to/keyfile.json -s 0xSomeStealthAddress -e 0xSomeEphemeralPubkey
 ```
 
-note that this requires you to know in advance what `[stealth_address, ephemeral_pubkey]` pairs are actually payments meant for your stealth meta address. To find this out see `scan` command below.
+note that this requires you to know in advance what `[stealth_address, ephemeral_pubkey]` pairs are actually payments meant for your stealth meta address (process will panic otherwise). See [scan](#scan) below for more info on how to scan for private payments to your stealth meta address
 
------------------------
+### scan
 
 scan announced stealth transfers for payments to your stealth meta address
 
@@ -80,4 +71,12 @@ For now a scanfile has to be precomputed into a JSON format like so
         }
     ]
 }
+```
+
+### show-meta-address
+
+recompute your stealth meta address from keyfile
+
+```bash
+stealthereum show-meta-address -k path/to/keyfile.json
 ```
