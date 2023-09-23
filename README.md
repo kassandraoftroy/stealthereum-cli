@@ -6,6 +6,8 @@ It's currently the easiest way to interact with the [eth-stealth-addresses](http
 
 For now it's extremely rough and low level! More improvements soon
 
+NOT AUDITED - HOMEROLLED CRYPTO - USE AT YOUR OWN RISK
+
 ## Installation
 
 ```
