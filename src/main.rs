@@ -227,7 +227,7 @@ fn new_stealth_address(receiver: &String) {
 
     println!(
         "------ STEALTH ADDRESS ------\nschemeId: {}\nstealth address: {}\nephepmeral pubkey: {}\nview tag: {}",
-        0,
+        1,
         hexlify(&stealth_address),
         hexlify(&ephemeral_pubkey),
         view_tag
