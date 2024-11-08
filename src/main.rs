@@ -14,13 +14,32 @@ use clap::{Parser, Subcommand};
 use std::fs::File;
 use std::io::prelude::*;
 use serde_json;
-
 use serde::{Deserialize, Serialize};
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce
+};
+use pbkdf2::pbkdf2_hmac_array;
+use sha2::Sha256;
+use rand::{rngs::OsRng, RngCore};
+use rpassword::read_password;
+use std::io::{self, Write};
+
+const SALT_SIZE: usize = 32;
+const NONCE_SIZE: usize = 12;
+const PBKDF2_ITERATIONS: u32 = 100_000;
 
 #[derive(Serialize, Deserialize)]
-struct Keyfile {
-    spending_key: String,
-    viewing_key: String,
+struct EncryptedKeyfile {
+    salt: String,
+    nonce: String,
+    ciphertext: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DecryptedKeys {
+    spending_key: [u8; 32],
+    viewing_key: [u8; 32],
 }
 
 #[derive(Deserialize)]
@@ -44,9 +63,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// generates a new stealth meta address and stores the private keys in a json
+    /// generates a new stealth meta address and stores the encrypted private keys
     Keygen {
-        /// specify custom path to keyfile (defaults to ./keys.json)
+        /// specify custom path to keyfile (defaults to ./keys.enc)
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
     },
@@ -85,7 +104,6 @@ enum Commands {
     },
 }
 
-
 fn main() {
     let cli = Cli::parse();
     match &cli.command {
@@ -94,7 +112,7 @@ fn main() {
                 Some(output) => { let _ = keygen(output); }
                 None => { 
                     let mut path = PathBuf::new();
-                    path.push("keys.json");
+                    path.push("stealthereum-keystore.enc");
                     let _ = keygen(&path);
                 }
             }
@@ -143,19 +161,58 @@ fn main() {
     }
 }
 
+fn get_password(confirm: bool) -> String {
+    print!("Enter password: ");
+    io::stdout().flush().unwrap();
+    let password = read_password().unwrap();
+    
+    if confirm {
+        print!("Confirm password: ");
+        io::stdout().flush().unwrap();
+        let confirm_password = read_password().unwrap();
+        
+        if password != confirm_password {
+            panic!("Passwords do not match!");
+        }
+    }
+    
+    password
+}
+
 fn keygen(path: &PathBuf) -> std::io::Result<()> {
     if path.exists() {
         panic!("keyfile already exists (pass custom output filepath with -o)");
     }
 
     let (sma, sk, vk) = generate_stealth_meta_address();
-    let kf = Keyfile {
-        spending_key: hexlify(&sk),
-        viewing_key: hexlify(&vk),
+    let keys = DecryptedKeys {
+        spending_key: sk,
+        viewing_key: vk,
     };
 
+    let mut salt = [0u8; SALT_SIZE];
+    OsRng.fill_bytes(&mut salt);
+    
+    let mut nonce_bytes = [0u8; NONCE_SIZE];
+    OsRng.fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
 
-    let json = serde_json::to_string(&kf)?;
+    let password = get_password(true);
+    
+    let key = pbkdf2_hmac_array::<Sha256, 32>(&password.as_bytes(), &salt, PBKDF2_ITERATIONS);
+    let cipher = Aes256Gcm::new_from_slice(&key).unwrap();
+
+    let plaintext = bincode::serialize(&keys).unwrap();
+    let ciphertext = cipher.encrypt(nonce, plaintext.as_ref())
+        .expect("encryption failure!");
+
+    let encrypted_file = EncryptedKeyfile {
+        salt: hex::encode(salt),
+        nonce: hex::encode(nonce_bytes),
+        ciphertext: hex::encode(ciphertext),
+    };
+
+    let json = serde_json::to_string(&encrypted_file)?;
     let mut file = File::create(path)?;
     file.write_all(json.as_bytes())?;
     println!("------ STEALTH META ADDRESS ------\n{}", hexlify(&sma));
@@ -164,7 +221,7 @@ fn keygen(path: &PathBuf) -> std::io::Result<()> {
 
 fn show_meta_address(keyfile: &PathBuf) {
     let (sk, vk) = extract_keys_from_keyfile(keyfile);
-    let stealth_meta_address= encode_stealth_meta_address(
+    let stealth_meta_address = encode_stealth_meta_address(
         get_pubkey_from_priv(decode_priv(&sk)),
         get_pubkey_from_priv(decode_priv(&vk)),
     );
@@ -241,17 +298,26 @@ fn extract_keys_from_keyfile(keyfile: &PathBuf) -> ([u8; 32], [u8; 32]) {
         Err(error) => panic!("error reading keyfile: {:?}", error),
     };
     
-    let kf_result = parse_keyfile(&string_file);
+    let encrypted_file: EncryptedKeyfile = serde_json::from_str(&string_file)
+        .expect("Failed to parse encrypted keyfile");
 
-    let kf = match kf_result {
-        Ok(val) => val,
-        Err(error) => panic!("error parsing keyfile: {:?}", error),
-    };
+    let salt = hex::decode(&encrypted_file.salt).expect("Invalid salt hex");
+    let nonce_bytes = hex::decode(&encrypted_file.nonce).expect("Invalid nonce hex");
+    let ciphertext = hex::decode(&encrypted_file.ciphertext).expect("Invalid ciphertext hex");
 
-    let sk = unhexlify(&kf.spending_key).as_slice().try_into().unwrap();
-    let vk = unhexlify(&kf.viewing_key).as_slice().try_into().unwrap();
+    let password = get_password(false);
+    
+    let key = pbkdf2_hmac_array::<Sha256, 32>(&password.as_bytes(), &salt, PBKDF2_ITERATIONS);
+    let cipher = Aes256Gcm::new_from_slice(&key).unwrap();
+    let nonce = Nonce::from_slice(&nonce_bytes);
 
-    (sk, vk)
+    let plaintext = cipher.decrypt(nonce, ciphertext.as_ref())
+        .expect("decryption failure!");
+
+    let keys: DecryptedKeys = bincode::deserialize(&plaintext)
+        .expect("Failed to deserialize decrypted keys");
+
+    (keys.spending_key, keys.viewing_key)
 }
 
 fn read_file(path: &PathBuf) -> std::io::Result<String> {
@@ -259,11 +325,6 @@ fn read_file(path: &PathBuf) -> std::io::Result<String> {
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     Ok(contents)
-}
-
-fn parse_keyfile(contents: &String) -> serde_json::Result<Keyfile> {
-    let kf: Keyfile = serde_json::from_str(contents)?;
-    Ok(kf)
 }
 
 fn parse_scannable_list(contents: &String) -> serde_json::Result<ScannableList> {
@@ -274,7 +335,6 @@ fn parse_scannable_list(contents: &String) -> serde_json::Result<ScannableList> 
 fn hexlify(a: &[u8]) -> String {
     let mut output = "0x".to_owned();
     output.push_str(&hex::encode(a));
-
     output
 }
 
@@ -286,6 +346,5 @@ fn unhexlify(h: &String) -> Vec<u8> {
         Ok(val) => val,
         Err(error) => panic!("error decoding hex: {:?}", error),
     };
-
     out
 }
