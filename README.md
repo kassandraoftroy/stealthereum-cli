@@ -2,7 +2,7 @@
 
 This is a bare bones CLI written in rust for ERC-5564 compliant stealth address management on evm chains
 
-It's currently the easiest way to interact with the [eth-stealth-addresses](https://github.com/kassandraoftroy/eth-stealth-addresses) rust library which implements the basic cryptographic operations necessary for a stealth addresses scheme over the secp256k1 curve (with view tags) as outlined [here](https://eips.ethereum.org/assets/eip-5564/scheme_ids)
+It's currently the easiest way to interact with the [eth-stealth-addresses](https://github.com/kassandraoftroy/eth-stealth-addresses) rust library which implements the basic cryptographic operations necessary for a stealth addresses scheme over the secp256k1 curve (with view tags) as outlined [here](https://eips.ethereum.org/assets/eip-5564)
 
 For now it's extremely rough and low level! More improvements soon
 
