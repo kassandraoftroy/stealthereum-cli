@@ -1,14 +1,5 @@
-use crate::utils::{
-    new_stealth_address,
-    new_stealth_address_from_registry,
-    hexlify,
-    unhexlify
-};
-use crate::constants::{
-    REGISTRY_ADDRESS,
-    get_default_chain_id,
-    get_default_rpc
-};
+use crate::constants::{get_default_chain_id, get_default_rpc, REGISTRY_ADDRESS};
+use crate::utils::{hexlify, new_stealth_address, new_stealth_address_from_registry, unhexlify};
 
 pub async fn run(
     receiver: Option<String>,
@@ -24,7 +15,8 @@ pub async fn run(
     let ephemeral_pubkey: [u8; 33];
     let view_tag: u8;
     if sma != "" {
-        (stealth_address, ephemeral_pubkey, view_tag) = new_stealth_address(unhexlify(&sma).as_slice().try_into().unwrap());
+        (stealth_address, ephemeral_pubkey, view_tag) =
+            new_stealth_address(unhexlify(&sma).as_slice().try_into().unwrap());
     } else {
         let address = match receiver {
             Some(receiver) => receiver,
@@ -38,7 +30,8 @@ pub async fn run(
             Some(rpc) => rpc,
             None => get_default_rpc(&chain_id),
         };
-        (stealth_address, ephemeral_pubkey, view_tag) = new_stealth_address_from_registry(&address, &rpc, &REGISTRY_ADDRESS.to_string()).await;
+        (stealth_address, ephemeral_pubkey, view_tag) =
+            new_stealth_address_from_registry(&address, &rpc, &REGISTRY_ADDRESS.to_string()).await;
     }
     println!(
         "------ STEALTH ADDRESS ------\nschemeId: {}\nstealth address: {}\nephepmeral pubkey: {}\nview tag: {}",

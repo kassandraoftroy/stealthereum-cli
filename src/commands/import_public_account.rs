@@ -1,7 +1,9 @@
+use crate::constants::{
+    get_default_chain_id, DEFAULT_KEYSTORE_DIR, PUBLIC_ACCT_FILENAME, SECRET_KEY_FILENAME,
+};
 use crate::utils::{copy_public_account, create_public_account, unhexlify};
-use crate::constants::{DEFAULT_KEYSTORE_DIR, get_default_chain_id, PUBLIC_ACCT_FILENAME, SECRET_KEY_FILENAME};
-use std::path::PathBuf;
 use rpassword::prompt_password;
+use std::path::PathBuf;
 
 pub fn run(
     keystore: Option<PathBuf>,
@@ -21,7 +23,7 @@ pub fn run(
             default_path.push(DEFAULT_KEYSTORE_DIR);
             default_path.push(chain_id.to_string());
             default_path
-        },
+        }
     };
     if ks.join(PUBLIC_ACCT_FILENAME).exists() {
         panic!("Public account file already exists at {}", ks.display());
@@ -29,15 +31,18 @@ pub fn run(
     if !ks.join(SECRET_KEY_FILENAME).exists() {
         panic!("stealth keys do not exist in this keystore directory, run `keygen` command first");
     }
-    let password = prompt_password("Enter stealthereum password:").expect("Failed to read password");
+    let password =
+        prompt_password("Enter stealthereum password:").expect("Failed to read password");
     match account {
         Some(account) => {
-            let old_pwd = prompt_password("Enter current account password:").expect("Failed to read password");
+            let old_pwd = prompt_password("Enter current account password:")
+                .expect("Failed to read password");
             copy_public_account(&account, &ks, &password, &old_pwd);
-        },
+        }
         None => {
             if interactive {
-                let priv_hex = prompt_password("Enter Private Key Hex:").expect("Failed to read private key");
+                let priv_hex =
+                    prompt_password("Enter Private Key Hex:").expect("Failed to read private key");
                 let priv_vec = unhexlify(&priv_hex);
                 create_public_account(&priv_vec, &ks, &password);
             } else {
@@ -48,9 +53,12 @@ pub fn run(
                 let priv_vec = unhexlify(&priv_hex);
                 create_public_account(&priv_vec, &ks, &password);
             }
-        },
+        }
     };
     println!("\nPublic account imported successfully!\n");
-    println!("Public account keyfile:\n{}", ks.join(PUBLIC_ACCT_FILENAME).display());
+    println!(
+        "Public account keyfile:\n{}",
+        ks.join(PUBLIC_ACCT_FILENAME).display()
+    );
     Ok(())
 }

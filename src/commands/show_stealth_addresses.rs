@@ -1,19 +1,12 @@
+use crate::constants::{get_default_chain_id, DEFAULT_KEYSTORE_DIR, PUBLIC_ACCT_FILENAME};
 use crate::utils::{
-    load_stealth_keys,
-    get_stealth_meta_address,
-    load_encrypted_logfile,
+    get_stealth_meta_address, hexlify, load_encrypted_logfile, load_stealth_keys,
     load_wallet_from_priv_or_account,
-    hexlify,
 };
-use std::path::PathBuf;
-use std::collections::HashSet;
 use alloy::primitives::Address;
 use rpassword::prompt_password;
-use crate::constants::{
-    DEFAULT_KEYSTORE_DIR,
-    PUBLIC_ACCT_FILENAME,
-    get_default_chain_id,
-};
+use std::collections::HashSet;
+use std::path::PathBuf;
 
 pub fn run(keystore: Option<PathBuf>, chain_id: Option<u64>) -> std::io::Result<()> {
     let chain_id = match chain_id {
@@ -27,9 +20,10 @@ pub fn run(keystore: Option<PathBuf>, chain_id: Option<u64>) -> std::io::Result<
             default_path.push(DEFAULT_KEYSTORE_DIR);
             default_path.push(chain_id.to_string());
             default_path.clone()
-        },
+        }
     };
-    let password = prompt_password("Enter stealthereum password:").expect("Failed to read password");
+    let password =
+        prompt_password("Enter stealthereum password:").expect("Failed to read password");
     let (sk, vk) = load_stealth_keys(&ks, &password);
     let sma = get_stealth_meta_address(sk, vk);
     let logfile = load_encrypted_logfile(&password, &ks);
@@ -39,7 +33,8 @@ pub fn run(keystore: Option<PathBuf>, chain_id: Option<u64>) -> std::io::Result<
     } else {
         public_address = Address::ZERO;
     }
-    let stealth_addresses: HashSet<Address> = logfile.logs.iter().map(|p| p.stealth_address).collect();
+    let stealth_addresses: HashSet<Address> =
+        logfile.logs.iter().map(|p| p.stealth_address).collect();
     println!("\n----- STEALTHEREUM PUBLIC INFO -----\n");
     println!("Stealth Meta Address: {}", hexlify(&sma));
     if public_address != Address::ZERO {

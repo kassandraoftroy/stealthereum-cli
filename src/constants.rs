@@ -19,6 +19,10 @@ pub const PUBLIC_ACCT_FILENAME: &str = "public_account_key.enc";
 /// Filename for the encrypted logfile
 pub const ENCRYPTED_LOGS_FILENAME: &str = "encrypted_stealth_logs.enc";
 
+/// ERC721 prefixed interface id
+pub const ERC721_ID_PREFIXED: &str =
+    "0x0000000000000000000000000000000000000000000000000000000080ac58cd";
+
 /// Ethereum chain-specific default RPC endpoints
 pub fn get_default_rpc(chain_id: &u64) -> String {
     match chain_id {

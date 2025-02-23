@@ -18,67 +18,88 @@ Make sure you add `$HOME/.cargo/bin` to your PATH
 
 ## Usage
 
-Below is the list of basic commands and arguments for the CLI
+Below is the list of basic commands and arguments for the CLI.
+
+NOTE: for now the default chain id is 17000 (holesky testnet). For ethereum mainnet you can use `--chain-id 1` flag.
 
 #### keygen
 
-generate a stealth meta address and store the keys
+generate a stealth meta address and store the keys in a keystore directory
 
 ```bash
-stealthereum keygen -o path/to/keyfile.json
+stealthereum keygen
 ```
 
-#### stealth-address
-
-generate all the components of a stealth address as defined in ERC-5564 given a target receiver's stealth meta address to privately send to
+pass a custom keystore directory and change target chain
 
 ```bash
-stealthereum stealth-address -r 0xReceiverStealthMetaAddres
+stealthereum keygen --keystore path/to/custom/dir --chain-id 1
 ```
 
-#### reveal-stealth-key
+#### import-public-account
 
-compute the private key for a stealth address you control
+import a public account from a private key or an encrypted account file and attach this account to the (encrypted) stealthereum keystore
 
 ```bash
-stealthereum reveal-stealth-key -k path/to/keyfile.json -s 0xStealthAddress -e 0xEphemeralPub
+stealthereum import-public-account --interactive
 ```
 
-note that this requires you to know in advance what `[stealth_address, ephemeral_pubkey]` pairs are actually payments meant for your stealth meta address (process will panic otherwise). See [scan](#scan) below for more info on how to scan for private payments to your stealth meta address
-
-#### scan
-
-scan announced stealth transfers for payments to your stealth meta address
+here it is with more parameters:
 
 ```bash
-stealthereum scan -k path/to/keyfile.json -s path/to/scanfile.json
+stealthereum import-public-account --keystore path/to/custom/dir --chain-id 1 --account path/to/existing/account/file
 ```
 
-this will log the `[stealth_address, ephemeral_pubkey]` pairs of all stealth transfers that are claimable by you in the scanfile.
-
-For now a scanfile has to be precomputed into a JSON format like so
-
-```json
-{
-    "announcements": [
-        {
-            "stealth_address": "0xSomeStealthAddress",
-            "ephemeral_pubkey": "0xSomeEphemeralPubkey",
-            "view_tag": 116
-        },
-        {
-            "stealth_address": "0xSomeOtherAddress",
-            "ephemeral_pubkey": "0xSomeOtherPubkey",
-            "view_tag": 94
-        }
-    ]
-}
-```
-
-#### show-meta-address
-
-recompute your stealth meta address from keyfile
+see all optional parameters with:
 
 ```bash
-stealthereum show-meta-address -k path/to/keyfile.json
+stealthereum import-public-account --help
+```
+
+#### register
+
+register stealth meta address on the registry contract
+
+```bash
+stealthereum register
+```
+
+use a custom keystore directory and change target chain
+
+```bash
+stealthereum register --keystore path/to/custom/dir --chain-id 1 --rpc-url http://localhost:8545
+```
+
+don't use the keystore at all and directly pass a hex encoded stealth meta address and a private key
+
+```bash
+stealthereum register --meta-address 0xReceiverStealthMetaAddress --private-key 0xYourPrivateKeyHex --chain-id 1 --rpc-url http://localhost:8545
+```
+
+see all optional parameters with:
+
+```bash
+stealthereum register --help
+```
+
+#### sync
+
+sync your stealthereum keystore with the tip of the chain
+
+```bash
+stealthereum sync
+```
+
+see all optional parameters with:
+
+```bash
+stealthereum sync --help
+```
+
+#### show-balances
+
+show balances of your stealth addresses
+
+```bash
+stealthereum show-balances --itemized
 ```
