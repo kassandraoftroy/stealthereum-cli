@@ -35,7 +35,7 @@ pub fn run(
         prompt_password("Enter stealthereum password:").expect("Failed to read password");
     match account {
         Some(account) => {
-            let old_pwd = prompt_password("Enter current account password:")
+            let old_pwd = prompt_password("Enter imported account password:")
                 .expect("Failed to read password");
             copy_public_account(&account, &ks, &password, &old_pwd);
         }
