@@ -250,12 +250,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             chain_id,
             address,
             ephemeral_pubkey,
-        } => commands::export_stealth_key::run(
-            keystore,
-            chain_id,
-            address,
-            ephemeral_pubkey,
-        )?,
+        } => commands::export_stealth_key::run(keystore, chain_id, address, ephemeral_pubkey)?,
         Commands::Sync {
             keystore,
             chain_id,

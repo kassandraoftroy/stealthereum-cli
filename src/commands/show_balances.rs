@@ -1,16 +1,15 @@
 use crate::constants::{
-    get_default_chain_id, get_default_rpc, DEFAULT_KEYSTORE_DIR, ERC721_ID_PREFIXED,
-    PUBLIC_ACCT_FILENAME,
+    get_default_chain_id, get_default_rpc, DEFAULT_KEYSTORE_DIR, PUBLIC_ACCT_FILENAME,
 };
 use crate::utils::{
     format_u256_as_decimal, get_stealth_meta_address, hexlify, load_encrypted_logfile,
-    load_stealth_keys, load_wallet_from_priv_or_account, unhexlify, Logfile,
+    load_stealth_keys, load_wallet_from_priv_or_account, Logfile,
 };
 use alloy::{
     contract::{ContractInstance, Interface},
     dyn_abi::DynSolValue,
     json_abi::JsonAbi,
-    primitives::{Address, FixedBytes, U256},
+    primitives::{Address, U256},
     providers::{Provider, ProviderBuilder},
 };
 use rpassword::prompt_password;
@@ -114,7 +113,7 @@ async fn get_balances(
         .with_recommended_fillers()
         .on_http(rpc.parse().unwrap());
     let abi = JsonAbi::parse([
-        "function supportsInterface(bytes4) external view returns (bool)",
+        "function isApprovedForAll(address owner, address operator) external view returns (bool)",
         "function symbol() external view returns (string memory)",
         "function decimals() external view returns (uint8)",
         "function balanceOf(address) external view returns (uint256)",
@@ -122,24 +121,26 @@ async fn get_balances(
     .expect("Failed to parse ABI");
     let iface = Interface::new(abi);
     let mut metadatas = Vec::new();
+    let eth_address = Address::from_str("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee").unwrap();
     for token in tokens {
-        if *token != Address::from_str("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee").unwrap() {
+        if *token != eth_address {
             let contract = ContractInstance::new(*token, provider.clone(), iface.clone());
 
-            let iid: FixedBytes<32> = FixedBytes::new(
-                unhexlify(&ERC721_ID_PREFIXED.to_string())
-                    .try_into()
-                    .unwrap(),
-            );
             // Check if token is ERC721 by calling supportsInterface with ERC721 interface ID
             let is_nft = match contract
                 .clone()
-                .function("supportsInterface", &[DynSolValue::FixedBytes(iid, 4)])
+                .function(
+                    "isApprovedForAll",
+                    &[
+                        DynSolValue::Address(addresses[0]),
+                        DynSolValue::Address(eth_address),
+                    ],
+                )
                 .expect("Failed to create method call")
                 .call()
                 .await
             {
-                Ok(result) => result[0].as_bool().unwrap_or(false),
+                Ok(_) => true,
                 Err(_) => false,
             };
             let decimals;

@@ -86,8 +86,7 @@ pub async fn run(
     let mut password: String = "".to_string();
     if account.is_some() {
         if account != Some(ks.join(PUBLIC_ACCT_FILENAME).to_string_lossy().to_string()) {
-            println!("[WARN]: registering stealth meta address on custom account, consider importing account with `import-public-account` command first");
-            password = prompt_password("Enter custom account password:")
+            password = prompt_password("Enter signer account password:")
                 .expect("Failed to read account password");
         }
     }
