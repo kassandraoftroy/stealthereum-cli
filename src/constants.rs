@@ -42,7 +42,7 @@ pub fn get_stealthereum_address(chain_id: &u64) -> String {
 pub fn get_default_starting_block(chain_id: &u64) -> u64 {
     match chain_id {
         17000 => 3397378,
-        11155111 => 7014841,
+        11155111 => 7875486,
         1 => 21903199,
         _ => panic!("Unsupported chain ID: {}", chain_id),
     }
