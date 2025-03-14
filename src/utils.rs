@@ -41,7 +41,7 @@ sol! {
             uint256 indexed schemeId,
             address indexed stealthAddress,
             address indexed caller,
-            bytes ephemeral_pubkeyKey,
+            bytes ephemeralPubkey,
             bytes metadata
         );
     }
@@ -160,12 +160,16 @@ pub async fn scan_for_payments(
         let logs = provider.get_logs(&filter).await.unwrap();
         for log in logs {
             if let Ok(decoded) = log.log_decode::<IAnnouncer::Announcement>() {
+                let ephem_pubkey_bytes = unhexlify(&hex::encode(&decoded.inner.ephemeralPubkey));
+                if decoded.inner.metadata.len() == 0 || ephem_pubkey_bytes.len() != 33 {
+                    continue;
+                }
                 let check = check_stealth_address_fast(
                     unhexlify(&decoded.inner.stealthAddress.to_string())
                         .as_slice()
                         .try_into()
                         .unwrap(),
-                    unhexlify(&hex::encode(&decoded.inner.ephemeral_pubkeyKey))
+                    unhexlify(&hex::encode(&decoded.inner.ephemeralPubkey))
                         .as_slice()
                         .try_into()
                         .unwrap(),
@@ -177,7 +181,7 @@ pub async fn scan_for_payments(
                     let parsed = decode_metadata(decoded.inner.metadata.to_vec());
                     payments.push(Payment {
                         stealth_address: decoded.inner.stealthAddress,
-                        ephemeral_pubkey: decoded.inner.ephemeral_pubkeyKey.clone(),
+                        ephemeral_pubkey: decoded.inner.ephemeralPubkey.clone(),
                         view_tag: decoded.inner.metadata[0] as u8,
                         parsed_transfers: parsed,
                         block_number: log.block_number.unwrap(),
