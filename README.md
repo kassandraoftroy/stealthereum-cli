@@ -20,7 +20,7 @@ Make sure you add `$HOME/.cargo/bin` to your PATH
 
 Below is the list of basic commands and arguments for the CLI.
 
-NOTE: for now the default chain id is 17000 (holesky testnet). For ethereum mainnet you can use `--chain-id 1` flag.
+NOTE: for now the default chain id is 11155111 (sepolia testnet). For ethereum mainnet you can use `--chain-id 1` flag.
 
 #### keygen
 

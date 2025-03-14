@@ -23,6 +23,7 @@ pub const ENCRYPTED_LOGS_FILENAME: &str = "encrypted_stealth_logs.enc";
 pub fn get_default_rpc(chain_id: &u64) -> String {
     match chain_id {
         17000 => "https://ethereum-holesky.publicnode.com".to_string(),
+        11155111 => "https://ethereum-sepolia-rpc.publicnode.com".to_string(),
         1 => "https://eth.llamarpc.com".to_string(),
         _ => panic!("Unsupported chain ID: {}", chain_id),
     }
@@ -32,6 +33,7 @@ pub fn get_default_rpc(chain_id: &u64) -> String {
 pub fn get_stealthereum_address(chain_id: &u64) -> String {
     match chain_id {
         17000 => "0x2129EEc72F4b42ED0666a1025A019d51E1820d9A".to_string(),
+        11155111 => "0x36d1fe257d1283aebBF7747e749B13258CC43c0b".to_string(),
         1 => "0x2f259C4ceB80E1383384BF7704F694Fb6f638dDC".to_string(),
         _ => panic!("Unsupported chain ID: {}", chain_id),
     }
@@ -40,11 +42,12 @@ pub fn get_stealthereum_address(chain_id: &u64) -> String {
 pub fn get_default_starting_block(chain_id: &u64) -> u64 {
     match chain_id {
         17000 => 3397378,
+        11155111 => 7014841,
         1 => 21903199,
         _ => panic!("Unsupported chain ID: {}", chain_id),
     }
 }
 
 pub fn get_default_chain_id() -> u64 {
-    return 17000;
+    return 11155111;
 }
