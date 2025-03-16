@@ -1,5 +1,5 @@
 use crate::constants::{
-    get_default_chain_id, get_default_starting_block, DEFAULT_KEYSTORE_DIR,
+    get_default_chain_id, get_default_starting_block, get_network_prefix, DEFAULT_KEYSTORE_DIR,
     ENCRYPTED_LOGS_FILENAME, SECRET_KEY_FILENAME, VIEWING_KEY_FILENAME,
 };
 use crate::utils::{create_stealth_meta_keys, hexlify, store_encrypted_logfile, Logfile};
@@ -45,7 +45,11 @@ pub fn run(keystore: Option<PathBuf>, chain_id: Option<u64>) -> std::io::Result<
         path.join(VIEWING_KEY_FILENAME).display(),
         path.join(ENCRYPTED_LOGS_FILENAME).display()
     );
-    println!("------ STEALTH META ADDRESS ------\n{}", hexlify(&sma));
+    println!(
+        "------ STEALTH META ADDRESS ------\nst:{}:{}",
+        get_network_prefix(&chain_id),
+        hexlify(&sma)
+    );
     Ok(())
 }
 

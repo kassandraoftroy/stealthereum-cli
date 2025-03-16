@@ -1,5 +1,6 @@
 use crate::constants::{
-    get_default_chain_id, get_default_rpc, DEFAULT_KEYSTORE_DIR, PUBLIC_ACCT_FILENAME,
+    get_default_chain_id, get_default_rpc, get_network_prefix, DEFAULT_KEYSTORE_DIR,
+    PUBLIC_ACCT_FILENAME,
 };
 use crate::utils::{
     format_u256_as_decimal, get_stealth_meta_address, hexlify, load_encrypted_logfile,
@@ -73,15 +74,27 @@ pub async fn run(
     if itemized {
         println!("\n----- ITEMIZED BALANCES -----\n");
         for ab in address_bals {
-            println!("    {}", ab.address.to_string());
+            println!(
+                "    {}:{}",
+                get_network_prefix(&chain_id),
+                ab.address.to_string()
+            );
             render_token_balances(&ab.balances, &metadatas, 1);
         }
     }
 
     println!("\n----- STEALTHEREUM PUBLIC INFO -----\n");
-    println!("Stealth Meta Address: {}", hexlify(&sma));
+    println!(
+        "Stealth Meta Address:\nst:{}:{}",
+        get_network_prefix(&chain_id),
+        hexlify(&sma)
+    );
     if public_address != Address::ZERO {
-        println!("Public Address: {}", public_address.to_string());
+        println!(
+            "\nPublic Address: {}:{}",
+            get_network_prefix(&chain_id),
+            public_address.to_string()
+        );
         println!("(balances of Public Address are not included)");
     }
     println!("\n----- STEALTHEREUM HOLDINGS -----\n");

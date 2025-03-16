@@ -1,4 +1,6 @@
-use crate::constants::{get_default_chain_id, DEFAULT_KEYSTORE_DIR, PUBLIC_ACCT_FILENAME};
+use crate::constants::{
+    get_default_chain_id, get_network_prefix, DEFAULT_KEYSTORE_DIR, PUBLIC_ACCT_FILENAME,
+};
 use crate::utils::{
     get_stealth_meta_address, hexlify, load_encrypted_logfile, load_stealth_keys,
     load_wallet_from_priv_or_account,
@@ -36,13 +38,25 @@ pub fn run(keystore: Option<PathBuf>, chain_id: Option<u64>) -> std::io::Result<
     let stealth_addresses: HashSet<Address> =
         logfile.logs.iter().map(|p| p.stealth_address).collect();
     println!("\n----- STEALTHEREUM PUBLIC INFO -----\n");
-    println!("Stealth Meta Address: {}", hexlify(&sma));
+    println!(
+        "Stealth Meta Address:\nst:{}:{}",
+        get_network_prefix(&chain_id),
+        hexlify(&sma)
+    );
     if public_address != Address::ZERO {
-        println!("Public Address: {}", public_address.to_string());
+        println!(
+            "\nPublic Address: {}:{}",
+            get_network_prefix(&chain_id),
+            public_address.to_string()
+        );
     }
     println!("\n----- STEALTH ADDRESSES -----\n");
     for stealth_address in stealth_addresses {
-        println!("{}", stealth_address.to_string());
+        println!(
+            "{}:{}",
+            get_network_prefix(&chain_id),
+            stealth_address.to_string()
+        );
     }
     Ok(())
 }
