@@ -48,6 +48,15 @@ pub fn get_default_starting_block(chain_id: &u64) -> u64 {
     }
 }
 
+pub fn get_network_prefix(chain_id: &u64) -> String {
+    match chain_id {
+        1 => "eth".to_string(),
+        17000 => "hol".to_string(),
+        11155111 => "sep".to_string(),
+        _ => panic!("Unsupported chain ID: {}", chain_id),
+    }
+}
+
 pub fn get_default_chain_id() -> u64 {
     return 11155111;
 }

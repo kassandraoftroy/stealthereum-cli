@@ -1,4 +1,4 @@
-use crate::constants::{get_default_chain_id, DEFAULT_KEYSTORE_DIR};
+use crate::constants::{get_default_chain_id, get_network_prefix, DEFAULT_KEYSTORE_DIR};
 use crate::utils::{get_stealth_meta_address, hexlify, load_stealth_keys};
 use rpassword::prompt_password;
 use std::path::PathBuf;
@@ -22,7 +22,8 @@ pub fn run(keystore: Option<PathBuf>, chain_id: Option<u64>) -> std::io::Result<
     let (sk, vk) = load_stealth_keys(&ks, &password);
     let stealth_meta_address = get_stealth_meta_address(sk, vk);
     println!(
-        "------ STEALTH META ADDRESS ------\n{}",
+        "------ STEALTH META ADDRESS ------\nst:{}:{}",
+        get_network_prefix(&chain_id),
         hexlify(&stealth_meta_address)
     );
     Ok(())
